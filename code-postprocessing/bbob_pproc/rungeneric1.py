@@ -263,7 +263,7 @@ def main(argv=None):
         algfolder = findfiles.get_output_directory_subfolder(args[0])
         outputdir = os.path.join(outputdir, algfolder)
         
-        print("Post-processing (1): will generate output " + 
+        print("\nPost-processing (1): will generate output " + 
                "data in folder %s" % outputdir)
         print("  this might take several minutes.")
 
@@ -300,12 +300,18 @@ def main(argv=None):
         # Wassim: now checkes the highest dimension testbed instead of the first for eventual large-scale scenarii
 
         if (genericsettings.verbose):
-            for i in dsList:
-                if (dict((j, i.instancenumbers.count(j)) for j in set(i.instancenumbers)) != 
-                    inset.instancesOfInterest):
-                    warnings.warn('The data of %s do not list ' % (i) + 
-                                  'the correct instances ' + 
-                                  'of function F%d.' % (i.funcId))
+            for i in dsList:                
+                # check whether current set of instances correspond to correct
+                # setting of a BBOB workshop and issue a warning otherwise:            
+                curr_instances = (dict((j, i.instancenumbers.count(j)) for j in set(i.instancenumbers)))
+                correct = False
+                for instance_set_of_interest in inset.instancesOfInterest:
+                    if curr_instances == instance_set_of_interest:
+                        correct = True
+                if not correct:
+                    warnings.warn('The data of %s do not list ' % i +
+                                  'the correct instances ' +
+                                  'of function F%d.' % i.funcId)
 
         dictAlg = dsList.dictByAlg()
 
@@ -345,7 +351,9 @@ def main(argv=None):
             plt.rc("font", **inset.rcfontlarger)
             plt.rc("legend", **inset.rclegendlarger)
             plt.rc('pdf', fonttype = 42)
+
             ppfigdim.main(dsList, values_of_interest, outputdir, genericsettings.verbose)
+
             plt.rcdefaults()
             print_done()
 
@@ -357,7 +365,7 @@ def main(argv=None):
         plt.rc('pdf', fonttype = 42)
 
         if genericsettings.isTab:
-            print("generating LaTeX tables...")
+            print("Generating LaTeX tables...")
             dictNoise = dsList.dictByNoise()
             for noise, sliceNoise in dictNoise.iteritems():
                 pptable.main(sliceNoise, testbedsettings.current_testbed.tabDimsOfInterest, #inset.tabDimsOfInterest,#Wassim:
@@ -458,7 +466,6 @@ def main(argv=None):
         ppfig.save_single_functions_html(os.path.join(outputdir, genericsettings.single_algorithm_file_name),
                                     dictFunc[dictFunc.keys()[0]][0].algId,
                                     htmlPage = ppfig.HtmlPage.ONE,
-                                    values_of_interest = values_of_interest,
                                     isBiobjective = dsList.isBiobjective(),
                                     functionGroups = dsList.getFuncGroups())
 

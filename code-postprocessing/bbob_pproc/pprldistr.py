@@ -135,7 +135,7 @@ def load_previous_RLBdata(filename=previous_RLBdata_filename):
 
 
 def caption_single():
-    best_year = testbedsettings.current_testbed.best_algorithm_year # Manh
+    best_year = testbedsettings.current_testbed.best_algorithm_year
     caption_part_one = r"""%
          Empirical cumulative distribution functions (ECDF), plotting the fraction of
          trials with an outcome not larger than the respective value on the $x$-axis.
@@ -148,7 +148,7 @@ def caption_single():
     caption_left_rlbased_targets = r"""%
          Left subplots: ECDF of number of function evaluations (FEvals) divided by search space dimension $D$,
          to fall below $\fopt+\Df$ where \Df\ is the
-         target just not reached by the""" + ("""GECCO-BBOB-%d""" %best_year) + r""" best algorithm within a budget of
+         target just not reached by the """ + ("""GECCO-BBOB-%d""" %best_year) + r""" best algorithm within a budget of
          % largest $\Df$-value $\ge10^{-8}$ for which the best \ART\ seen in the """ + ("""GECCO-BBOB-%d""" %best_year) + r""" was yet above
          $k\times\DIM$ evaluations, where $k$ is the first value in the legend. """
     caption_wrap_up = r"""%
@@ -188,10 +188,11 @@ def caption_single():
     return figure_caption.replace(r'TO_BE_REPLACED', '$' + 'D, '.join([str(i) for i in single_runlength_factors[:6]]) + 'D,\dots$')
 
 def caption_two():
-    best_year = testbedsettings.current_testbed.best_algorithm_year # Manh
+    best_year = testbedsettings.current_testbed.best_algorithm_year
     caption_two_part_one = r"""%
         Empirical cumulative distributions (ECDF)
-        of run lengths and speed-up ratios """ + ("""in %d-D (left) and %d-D (right). """ %tuple(testbedsettings.current_testbed.tabDimsOfInterest)) + r"""Left sub-columns: ECDF of
+        of run lengths and speed-up ratios """ + ("""in %d-D (left) and %d-D (right).""" % tuple(testbedsettings.current_testbed.tabDimsOfInterest)) + r"""
+        Left sub-columns: ECDF of
         the number of function evaluations divided by dimension $D$
         (FEvals/D) """
 
@@ -513,8 +514,8 @@ def plotFVDistr(dsList, budget, min_f=None, **plotArgs):
     for ds in dsList:
         for i, fvals in enumerate(ds.funvals):
             if fvals[0] > budget * ds.dim:
-                assert (i > 0, 'first entry ' + str(fvals[0]) +
-                        'was smaller than maximal budget ' + str(budget * ds.dim))
+                assert i > 0, 'first entry ' + str(fvals[0]) + \
+                        'was smaller than maximal budget ' + str(budget * ds.dim)
                 fvals = ds.funvals[i - 1]
                 break
         # vals = fvals[1:].copy() / target[i.funcId]

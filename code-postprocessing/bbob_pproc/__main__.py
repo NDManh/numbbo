@@ -13,12 +13,15 @@ import urllib
 import shutil
 import subprocess
 import doctest
+
 try:
     from . import rungeneric
+
     is_module = True
 except:
     is_module = False
 import matplotlib  # just to make sure the following is actually done first
+
 matplotlib.use('Agg')  # To avoid window popup and use without X forwarding
 
 # depreciated, to be removed, see end of file
@@ -48,9 +51,11 @@ if 11 < 3 and __name__ == "__main__" and not is_module:
     else:
         cocopp.rungeneric.main(args)
 
+
 def join_path(a, *p):
     path = os.path.join(a, *p)
     return path
+
 
 def copy_latex_templates():
     currentFolder = os.path.dirname(os.path.realpath(__file__))
@@ -60,6 +65,7 @@ def copy_latex_templates():
     shutil.copy(join_path(templateFolder, 'templateBBOBcmp.tex'), currentFolder)
     shutil.copy(join_path(templateFolder, 'templateBBOBmany.tex'), currentFolder)
     shutil.copy(join_path(templateFolder, 'templateBIOBJarticle.tex'), currentFolder)
+    shutil.copy(join_path(templateFolder, 'templateBIOBJmultiple.tex'), currentFolder)
     shutil.copy(join_path(templateFolder, 'sig-alternate.cls'), currentFolder)
     shutil.copy(join_path(templateFolder, 'comment.sty'), currentFolder)
     shutil.copy(join_path(templateFolder, 'acmcopyright.sty'), currentFolder)
@@ -87,6 +93,7 @@ def retrieve_algorithm(dataPath, folderName, algorithmName, fileName=None):
         dataurl = 'http://coco.gforge.inria.fr/data-archive/%s/%s' % (folderName, algorithmName)
         urllib.urlretrieve(dataurl, algorithmFile)
 
+
 def prepare_data(run_all_tests):
     print('preparing algorithm data')
 
@@ -96,7 +103,7 @@ def prepare_data(run_all_tests):
     # retrieve_algorithm(dataPath, '2010', 'IPOP-ACTCMA-ES_ros_noiseless.tar.gz')
     # [outcommented and replaced by BIPOP until 2010 data is in new format]
     retrieve_algorithm(dataPath, '2009', 'BFGS_ros_noiseless.tgz')
-    retrieve_algorithm(dataPath, 'biobj-test', 'RS_on_bbob-biobj-test.tgz', 'RS.tgz')
+    retrieve_algorithm(dataPath, 'bbob-biobj-2016', 'RS-4.tgz')
 
     if run_all_tests:
         retrieve_algorithm(dataPath, '2009', 'BIPOP-CMA-ES_hansen_noiseless.tgz')
@@ -107,8 +114,14 @@ def prepare_data(run_all_tests):
         retrieve_algorithm(dataPath, '2013', 'lmm-CMA-ES_auger_noiseless.tgz')
         retrieve_algorithm(dataPath, '2009', 'DE-PSO_garcia-nieto_noiseless.tgz')
         retrieve_algorithm(dataPath, '2009', 'VNS_garcia-martinez_noiseless.tgz')
+        retrieve_algorithm(dataPath, 'bbob-biobj-2016', 'RS-4.tgz')
+        retrieve_algorithm(dataPath, 'bbob-biobj-2016', 'RS-100.tgz')
+        retrieve_algorithm(dataPath, 'biobj-test', 'N-II.tgz') # diff. location and name due to Jenkins settings with too long paths
+        retrieve_algorithm(dataPath, '2009', 'BFGS_ros_noisy.tgz')
+        retrieve_algorithm(dataPath, '2009', 'MCS_huyer_noisy.tgz')        
 
     return dataPath
+
 
 def process_doctest_output(stream=None):
     """ """
@@ -128,7 +141,7 @@ def process_doctest_output(stream=None):
 
         if state == -1:  # found a failed example line
             s1 += '\n\n*** Failed Example:' + line
-            s2 += '\n\n\n'   # line
+            s2 += '\n\n\n'  # line
             # state = 0  # wait for 'Expected:' line
 
         if line.startswith('Expected:'):
@@ -150,6 +163,11 @@ def process_doctest_output(stream=None):
         if state == 2:
             s2 += line + ''
 
+
+def delete_files():
+    shutil.rmtree('ppdata')
+
+
 def main(args):
     """these tests are executed when ``python bbob_pproc`` is called.
 
@@ -162,7 +180,7 @@ def main(args):
 
     python = 'python -m '  # how to call python
     if len(sys.argv) > 1 and sys.argv[1] == 'wine':
-        python = 'C:\\Python26\\python.exe ' # works for wine
+        python = 'C:\\Python26\\python.exe '  # works for wine
 
     data_path = ' ' + prepare_data(run_all_tests)
 
@@ -178,49 +196,90 @@ def main(args):
     print('**  subtest 1 finished in ', time.time() - t0, ' seconds')
     assert result == 0, 'Test failed: rungeneric on one algorithm with option --conv.'
     run_latex_template("templateBBOBarticle.tex")
+    delete_files()
 
     t0 = time.time()
-    print(python + command + join_path(data_path, 'RS.tgz'))
-    result = os.system(python + command + join_path(data_path, 'RS.tgz'))
-    print('**  subtest 1 finished in ', time.time() - t0, ' seconds')
+    print(python + command + join_path(data_path, 'RS-4.tgz'))
+    result = os.system(python + command + join_path(data_path, 'RS-4.tgz'))
+    print('**  subtest 2 finished in ', time.time() - t0, ' seconds')
     assert result == 0, 'Test failed: rungeneric on one bi-objective algorithm.'
     run_latex_template("templateBIOBJarticle.tex")
+    delete_files()
 
     if run_all_tests:
         t0 = time.time()
         print(time.asctime())
-        result = os.system(python + command + # ' --omit-single ' +
-                    join_path(data_path, 'BIPOP-CMA-ES_hansen_noiseless.tgz') +
-                    join_path(data_path, 'MCS_huyer_noiseless.tgz') +
-                    join_path(data_path, 'NEWUOA_ros_noiseless.tgz') +
-                    join_path(data_path, 'RANDOMSEARCH_auger_noiseless.tgz') +
-                    join_path(data_path, 'BFGS_ros_noiseless.tgz'))
-        print('**  subtest 2 finished in ', time.time() - t0, ' seconds')
+        result = os.system(python + command +
+                           join_path(data_path, 'BIPOP-CMA-ES_hansen_noiseless.tgz') +
+                           join_path(data_path, 'MCS_huyer_noiseless.tgz') +
+                           join_path(data_path, 'NEWUOA_ros_noiseless.tgz') +
+                           join_path(data_path, 'RANDOMSEARCH_auger_noiseless.tgz') +
+                           join_path(data_path, 'BFGS_ros_noiseless.tgz'))
+        print('**  subtest 3 finished in ', time.time() - t0, ' seconds')
         assert result == 0, 'Test failed: rungeneric on many algorithms.'
         run_latex_template("templateBBOBmany.tex")
+        delete_files()
 
         t0 = time.time()
         result = os.system(python + command + '--conv' +
-                    join_path(data_path, 'SMAC-BBOB_hutter_noiseless.tgz') +
-                    join_path(data_path, 'lmm-CMA-ES_auger_noiseless.tgz'))
-        print('**  subtest 3 finished in ', time.time() - t0, ' seconds')
+                           join_path(data_path, 'SMAC-BBOB_hutter_noiseless.tgz') +
+                           join_path(data_path, 'lmm-CMA-ES_auger_noiseless.tgz'))
+        print('**  subtest 4 finished in ', time.time() - t0, ' seconds')
         assert result == 0, 'Test failed: rungeneric on two algorithms with option --conv.'
         run_latex_template("templateBBOBcmp.tex")
+        delete_files()
 
         t0 = time.time()
         result = os.system(python + command + ' --omit-single ' +
-                    join_path(data_path, 'DE-PSO_garcia-nieto_noiseless.tgz') +
-                    join_path(data_path, 'VNS_garcia-martinez_noiseless.tgz'))
-        print('**  subtest 4 finished in ', time.time() - t0, ' seconds')
+                           join_path(data_path, 'DE-PSO_garcia-nieto_noiseless.tgz') +
+                           join_path(data_path, 'VNS_garcia-martinez_noiseless.tgz'))
+        print('**  subtest 5 finished in ', time.time() - t0, ' seconds')
         assert result == 0, 'Test failed: rungeneric on two algorithms with option --omit-single.'
         run_latex_template("templateBBOBcmp.tex")
+        delete_files()
 
         t0 = time.time()
         result = os.system(python + command + ' --expensive ' +
-                    join_path(data_path, 'VNS_garcia-martinez_noiseless.tgz'))
-        print('**  subtest 5 finished in ', time.time() - t0, ' seconds')
+                           join_path(data_path, 'VNS_garcia-martinez_noiseless.tgz'))
+        print('**  subtest 6 finished in ', time.time() - t0, ' seconds')
         assert result == 0, 'Test failed: rungeneric on one algorithm with option --expensive.'
         run_latex_template("templateBBOBarticle.tex")
+        delete_files()
+
+        t0 = time.time()
+        result = os.system(python + command + ' --omit-single ' +
+                           join_path(data_path, 'RS-4.tgz') +
+                           join_path(data_path, 'RS-100.tgz'))
+        print('**  subtest 7 finished in ', time.time() - t0, ' seconds')
+        assert result == 0, 'Test failed: rungeneric on two bbob-biobj algorithms.'
+        run_latex_template("templateBIOBJmultiple.tex")
+        delete_files()
+        
+        t0 = time.time()
+        # Note: we use the original GA-MULTIOBJ-NSGA-II.tgz data set
+        # but with a shorter file name from the biobj-test folder
+        # to avoid problems with too long path names on the windows
+        # Jenkins slave
+        result = os.system(python + command + ' --omit-single ' +
+                           join_path(data_path, 'N-II.tgz') +
+                           join_path(data_path, 'RS-4.tgz') + 
+                           join_path(data_path, 'RS-100.tgz'))
+        print('**  subtest 8 finished in ', time.time() - t0, ' seconds')
+        assert result == 0, 'Test failed: rungeneric on three bbob-biobj algorithms.'
+        run_latex_template("templateBIOBJmultiple.tex")
+        delete_files()
+        
+        # testing data from bbob-noisy suite:
+        t0 = time.time()
+        result = os.system(python + command +
+                           join_path(data_path, 'MCS_huyer_noisy.tgz') +
+                           join_path(data_path, 'BFGS_ros_noisy.tgz'))
+        print('**  subtest 9 finished in ', time.time() - t0, ' seconds')
+        assert result == 0, 'Test failed: rungeneric on two bbob-noisy algorithms.'
+        # TODO: include noisy LaTeX templates into github repository and add test:
+        #run_latex_template("templateBBOBnoisy.tex")
+        delete_files()
+
 
     print('launching doctest (it might be necessary to close a few pop up windows to finish)')
     t0 = time.time()
@@ -228,7 +287,7 @@ def main(args):
     if 1 < 3:
         failure_count = 0
         test_count = 0
-        #doctest.testmod(report=True, verbose=True)  # this is quite cool!
+        # doctest.testmod(report=True, verbose=True)  # this is quite cool!
         # go through the py files in the bbob_pproc folder
         currentPath = os.getcwd()
         newPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -256,8 +315,9 @@ def main(args):
     # print('    more info in file _bbob_pproc_doctest_.txt)')
     print('*** done testing module bbob_pproc ***')
 
-    if failure_count > 0:
+    if failure_count > 0:                 
         raise ValueError('%d of %d tests failed' % (failure_count, test_count))
+
 
 """
         sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))

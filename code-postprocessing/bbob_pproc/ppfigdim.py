@@ -57,6 +57,7 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 from . import genericsettings, toolsstats, bestalg, pproc, ppfig, ppfigparam, htmldesc, toolsdivers
 from . import testbedsettings
@@ -113,7 +114,7 @@ def scaling_figure_caption():
     #    "$\\fopt+\\Df$ was not surpassed in a trial, from all " +  
     #    "(successful and unsuccessful) trials, and \\fopt\\ is the optimal " +
     #    "function value.  " +
-    best_year = testbedsettings.current_testbed.best_algorithm_year # Manh
+    best_year = testbedsettings.current_testbed.best_algorithm_year
     scaling_figure_caption_fixed = caption_part_one + r"""%
         % Shown are $\Df = 10^{\{values_of_interest\}}$.  
         Numbers above \aRT-symbols (if appearing) indicate the number of trials
@@ -128,14 +129,14 @@ def scaling_figure_caption():
         Shown is the \aRT\ for 
         targets just not reached by
     %    the largest $\Df$-values $\ge10^{-8}$ for which the \aRT\ of 
-        the artificial""" + (""" GECCO-BBOB-%d""" %best_year) + r""" best algorithm
+        the artificial""" + (""" GECCO-BBOB-%d best algorithm  """ %best_year) + r"""
         within the given budget $k\times\DIM$, where $k$ is shown in the legend.
     %    was above $\{values_of_interest\}\times\DIM$ evaluations. 
         Numbers above \aRT-symbols indicate the number of trials reaching the respective target.  
-        The light thick line with diamonds indicates the respective best result from """ + ("""BBOB-%d""" %best_year) + r""" for
+        The light thick line with diamonds indicates the respective best result from """ + ("""BBOB-%d for """ %best_year) + r"""
         the most difficult target. 
         Slanted grid lines indicate a scaling with ${\cal O}(\DIM)$ compared to ${\cal O}(1)$  
-        when using the respective %d best algorithm.
+        when using the respective %d best algorithm. 
         """ %best_year
         # r"Shown is the \aRT\ for the smallest $\Df$-values $\ge10^{-8}$ for which the \aRT\ of the GECCO-BBOB-2009 best algorithm " + 
         # r"was below $10^{\{values_of_interest\}}\times\DIM$ evaluations. " + 
@@ -385,6 +386,7 @@ def plot(dsList, valuesOfInterest=None, styles=styles):
 
         mediandata = {}
         displaynumber = {}
+        no_target_reached = 1;
         for i_target in range(len(valuesOfInterest)):
             succ = []
             unsucc = []
@@ -408,6 +410,7 @@ def plot(dsList, valuesOfInterest=None, styles=styles):
                         displaynumber[dim] = ((dim, tmp[0], tmp[2]))
                     mediandata[dim] = (i_target, tmp[-1])
                     unsucc.append(np.append(dim, np.nan))
+                    no_target_reached = 0
                 else:
                     unsucc.append(np.append(dim, tmp[-2]))  # total number of fevals
 
@@ -480,6 +483,13 @@ def plot(dsList, valuesOfInterest=None, styles=styles):
             res.extend(plt.plot(tmp[:, 0], maxevals / tmp[:, 0]**ynormalize_by_dimension,
                        color=styles[len(valuesOfInterest) - 1]['color'],
                        ls='', marker='x', markersize=20))
+            if no_target_reached:
+                ylim_maxevals = max(maxevals / tmp[:, 0]**ynormalize_by_dimension)
+                ylim = (ylim[0], math.ceil(ylim_maxevals))
+                plt.annotate('no target reached', xy=(0.5, 0.5), xycoords='axes fraction', fontsize=14,
+                            horizontalalignment='center', verticalalignment='center')
+            else:
+                ylim = (ylim[0], math.ceil(ylim[1]))
             plt.ylim(ylim)
         # median
         if mediandata:
@@ -601,18 +611,18 @@ def main(dsList, _valuesOfInterest, outputdir, verbose=True):
     ppfig.copy_js_files(outputdir)
     
     funInfos = ppfigparam.read_fun_infos()    
-    
     fontSize = genericsettings.getFontSize(funInfos.values())
     for func in dictFunc:
         plot(dictFunc[func], _valuesOfInterest, styles=styles)  # styles might have changed via config
         beautify(axesLabel=False)
+        
+        # display number of instances in data and used targets type:
+        display_text = '%d instances\n' % len(((dictFunc[func][0]).instancenumbers))
+        display_text += _valuesOfInterest.short_info
         plt.text(plt.xlim()[0], plt.ylim()[0],
-                 _valuesOfInterest.short_info, fontsize=14)
+                 display_text, fontsize=14, horizontalalignment="left",
+                 verticalalignment="bottom")
 
-        # display number of instances in data:
-        instanceText = '%d instances' % len(((dictFunc[func][0]).instancenumbers))
-        plt.text(plt.xlim()[0], plt.ylim()[0]+0.5, instanceText, fontsize=14)
-  
         if func in testbedsettings.current_testbed.functions_with_legend:
             toolsdivers.legend(loc="best")
         if func in funInfos.keys():
@@ -620,6 +630,7 @@ def main(dsList, _valuesOfInterest, outputdir, verbose=True):
             # print(plt.rcParams['font.size'])
             funcName = funInfos[func]
             plt.gca().set_title(funcName, fontsize=fontSize)
+
         plot_previous_algorithms(func, _valuesOfInterest)
         filename = os.path.join(outputdir, 'ppfigdim_f%03d' % (func))
         with warnings.catch_warnings(record=True) as ws:

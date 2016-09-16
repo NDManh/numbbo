@@ -105,7 +105,7 @@ def scaling_figure_caption(for_html = False):
 
 
 def prepare_ecdfs_figure_caption():
-    best_year = testbedsettings.current_testbed.best_algorithm_year # Manh
+    best_year = testbedsettings.current_testbed.best_algorithm_year
     bestyeartext = (
                     r"The ``best %d'' line " % best_year +
                     r"corresponds to the best \aRT\ observed during BBOB %d " % best_year +
@@ -155,7 +155,7 @@ def prepare_ecdfs_figure_caption():
 def ecdfs_figure_caption(for_html = False, dimension = 0):
 
     if for_html:
-        key = '##bbobECDFslegend%s%d##' % (testbedsettings.current_testbed.scenario, dimension)
+        key = '##bbobECDFslegend%s##' % testbedsettings.current_testbed.scenario
         caption = htmldesc.getValue(key)
     else:
         caption = prepare_ecdfs_figure_caption()
@@ -166,6 +166,7 @@ def ecdfs_figure_caption(for_html = False, dimension = 0):
 
     caption = caption.replace('BBOBPPFIGSTARGETRANGE',
                               str(testbedsettings.current_testbed.pprldmany_target_range_latex))
+    caption = caption.replace('DIMVALUE', str(dimension))
 
     if genericsettings.runlength_based_targets:
         caption = caption.replace('REFERENCE_ALGORITHM', target.reference_algorithm)
@@ -265,7 +266,6 @@ def plotLegend(handles, maxval=None):
         for k in sorted(ys[j].keys()):
             #enforce best 2009 comes first in case of equality
             tmp = []
-            # Manh : a generalization
             best_year_label = 'best %d' %testbedsettings.current_testbed.best_algorithm_year
             for h in ys[j][k]:
                 if plt.getp(h, 'label') == best_year_label:
@@ -432,7 +432,7 @@ def main(dictAlg, htmlFilePrefix, isBiobjective, sortedAlgs=None, outputdir='ppd
     for f in dictFunc:
         filename = os.path.join(outputdir,'ppfigs_f%03d' % (f))
         handles = []
-        fix_styles(len(sortedAlgs))  # 
+        fix_styles(len(sortedAlgs), styles)  # 
         for i, alg in enumerate(sortedAlgs):
             dictDim = dictFunc[f][alg].dictByDim()  # this does not look like the most obvious solution
 
@@ -553,14 +553,30 @@ def main(dictAlg, htmlFilePrefix, isBiobjective, sortedAlgs=None, outputdir='ppd
         # bottom labels with #instances and type of targets:
         infotext = ''
         algorithms_with_data = [a for a in dictAlg.keys() if dictAlg[a] != []]
+        
+        num_of_instances = []
         for alg in algorithms_with_data:
-            infotext += '%d, ' % len((dictFunc[f][alg])[0].instancenumbers)
+            if len(dictFunc[f][alg]) > 0:
+                num_of_instances.append(len((dictFunc[f][alg])[0].instancenumbers))
+            else:
+                warnings.warn('The data for algorithm %s and function %s are missing' % (alg, f))
+        # issue a warning if number of instances is inconsistant, otherwise
+        # display only the present number of instances, i.e. remove copies
+        if len(set(num_of_instances)) > 1:
+            warnings.warn('Number of instances inconsistent over all algorithms.')
+        else:
+            num_of_instances = set(num_of_instances)
+        for n in num_of_instances:
+            infotext += '%d, ' % n
+
         infotext = infotext.rstrip(', ')
-        infotext += ' instances'
-        plt.text(plt.xlim()[0], plt.ylim()[0]+0.5, infotext, fontsize=14)  # TODO: check
-        plt.text(plt.xlim()[0], plt.ylim()[0], 
-                 'target ' + target.label_name() + ': ' + target.label(0),
-                 fontsize=14)  # TODO: check
+        infotext += ' instances\n'
+        infotext += 'target ' + target.label_name() + ': ' + target.label(0)
+        plt.text(plt.xlim()[0], plt.ylim()[0],
+                 infotext, fontsize=14, horizontalalignment="left",
+                 verticalalignment="bottom")
+
+
 
         saveFigure(filename, verbose=verbose)
 
@@ -580,7 +596,7 @@ def main(dictAlg, htmlFilePrefix, isBiobjective, sortedAlgs=None, outputdir='ppd
             
             alg_definitions.append((', ' if i > 0 else '') + '%s: %s' % (symb, '\\algorithm' + abc[i % len(abc)]))
             alg_definitions_html += (', ' if i > 0 else '') + '%s: %s' % (symb_html, toolsdivers.str_to_latex(toolsdivers.strip_pathname1(sortedAlgs[i])))
-        if not isinstance(testbedsettings.current_testbed, testbedsettings.LargeScaleTestbed): # Manh : option large scale
+        if not isinstance(testbedsettings.current_testbed, testbedsettings.LargeScaleTestbed):
             toolsdivers.prepend_to_file(latex_commands_filename,
                     [#'\\providecommand{\\bbobppfigsftarget}{\\ensuremath{10^{%s}}}' 
                      #       % target.loglabel(0), # int(numpy.round(numpy.log10(target))),
